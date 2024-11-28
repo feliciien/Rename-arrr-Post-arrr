@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QPushButton,
     QFileDialog, QLabel, QLineEdit, QMessageBox, QProgressBar, QListWidget, QListWidgetItem
 )
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, QDir, QDirIterator
 from renamer import rename_files, extract_title_year
 from utils import setup_logger
 
@@ -27,7 +27,7 @@ class RenameThread(QThread):
         logger.info(f"Starting renaming process for {total_files} files.")
         for index, filename in enumerate(self.files, start=1):
             if not self._is_running:
-                logger.info("Renaming process stopped by user.")
+                logger.info("Renaming process was stopped by the user.")
                 break
             try:
                 title, year = extract_title_year(filename)
@@ -40,6 +40,7 @@ class RenameThread(QThread):
                 self.error_occurred.emit(error_message)
             progress = int((index / total_files) * 100)
             self.progress_update.emit(progress)
+            logger.debug(f"Progress: {progress}%")
         logger.info("Renaming process completed.")
 
     def stop(self):
@@ -58,11 +59,11 @@ class RenameArrrGUI(QWidget):
         layout = QVBoxLayout()
 
         # Folder selection
-        self.label = QLabel('Select the folder containing media files:', self)
+        self.label = QLabel('Select the folder containing files:', self)
         layout.addWidget(self.label)
 
         self.path_input = QLineEdit(self)
-        self.path_input.setReadOnly(True)
+        self.path_input.setReadOnly(True)  # Make it read-only to prevent manual edits
         layout.addWidget(self.path_input)
 
         self.browse_button = QPushButton('Browse', self)
@@ -74,6 +75,7 @@ class RenameArrrGUI(QWidget):
         layout.addWidget(self.file_list_label)
 
         self.file_list = QListWidget(self)
+        self.file_list.setSelectionMode(QListWidget.MultiSelection)  # Allow multiple selections
         layout.addWidget(self.file_list)
 
         # Rename button
@@ -89,41 +91,71 @@ class RenameArrrGUI(QWidget):
         self.setLayout(layout)
 
     def browse_folder(self):
+        """
+        Opens a dialog to select a folder and populates the file list.
+        Utilizes QDir and QDirIterator for robust file enumeration.
+        """
         folder = QFileDialog.getExistingDirectory(self, 'Select Folder')
         if folder:
             logger.debug(f"Selected folder: {folder}")
+            print(f"DEBUG: Selected folder: {folder}")  # Print to terminal
             self.path_input.setText(folder)
             self.populate_file_list(folder)
         else:
             logger.debug("No folder selected.")
+            print("DEBUG: No folder selected.")  # Print to terminal
 
     def populate_file_list(self, folder_path):
+        """
+        Populates the file list widget with all files from the selected folder.
+        Uses QDir and QDirIterator for comprehensive file enumeration.
+        """
         self.file_list.clear()
         logger.info(f"Populating file list for folder: {folder_path}")
+        print(f"DEBUG: Populating file list for folder: {folder_path}")  # Print to terminal
 
         if not os.path.exists(folder_path):
             logger.error(f"Folder does not exist: {folder_path}")
+            print(f"DEBUG: Folder does not exist: {folder_path}")  # Print to terminal
             QMessageBox.critical(self, 'Error', f"The folder does not exist: {folder_path}")
             return
 
-        allowed_extensions = {'.mp4', '.mkv', '.avi', '.mov'}
         try:
+            dir = QDir(folder_path)
+            # Set filters to include all files, excluding directories
+            filters = QDir.Files | QDir.NoSymLinks | QDir.AllEntries
+            # Include hidden and system files
+            dir.setFilter(filters | QDir.Hidden | QDir.System)
+            iterator = QDirIterator(folder_path, QDir.AllEntries, QDirIterator.NoIteratorFlags)
+
             files_found = False
-            for filename in os.listdir(folder_path):
-                full_path = os.path.join(folder_path, filename)
-                if os.path.isfile(full_path) and os.path.splitext(filename)[1].lower() in allowed_extensions:
-                    self.file_list.addItem(QListWidgetItem(filename))
+            while iterator.hasNext():
+                iterator.next()
+                file_info = iterator.fileInfo()
+                if file_info.isFile():
+                    filename = file_info.fileName()
                     logger.debug(f"Adding file: {filename}")
+                    print(f"DEBUG: Adding file: {filename}")  # Print to terminal
+                    self.file_list.addItem(QListWidgetItem(filename))
                     files_found = True
 
             if not files_found:
-                logger.info(f"No media files found in folder: {folder_path}")
-                QMessageBox.information(self, 'No Files Found', 'No media files found in the selected folder.')
+                logger.info(f"No files found in folder: {folder_path}")
+                print(f"DEBUG: No files found in folder: {folder_path}")  # Print to terminal
+                QMessageBox.information(self, 'No Files Found', 'No files found in the selected folder.')
+        except PermissionError as pe:
+            logger.error(f"Permission error: {pe}")
+            print(f"DEBUG: Permission error: {pe}")  # Print to terminal
+            QMessageBox.critical(self, 'Error', f"Permission error while accessing the folder: {pe}")
         except Exception as e:
-            logger.error(f"Error populating file list: {e}")
-            QMessageBox.critical(self, 'Error', f"An error occurred: {e}")
+            logger.error(f"Error reading folder: {e}")
+            print(f"DEBUG: Error reading folder: {e}")  # Print to terminal
+            QMessageBox.critical(self, 'Error', f"An error occurred while reading the folder: {e}")
 
     def rename_files_action(self):
+        """
+        Starts the renaming process for files in the selected folder.
+        """
         folder_path = self.path_input.text()
         if not folder_path:
             QMessageBox.warning(self, 'Input Error', 'Please select a folder.')
@@ -135,6 +167,8 @@ class RenameArrrGUI(QWidget):
             return
 
         logger.info(f"Starting renaming for {len(files_to_rename)} files in folder: {folder_path}")
+        print(f"DEBUG: Starting renaming for {len(files_to_rename)} files in folder: {folder_path}")  # Print to terminal
+
         self.rename_button.setEnabled(False)
         self.browse_button.setEnabled(False)
 
@@ -146,9 +180,19 @@ class RenameArrrGUI(QWidget):
         self.rename_thread.start()
 
     def update_progress(self, value):
+        """
+        Updates the progress bar.
+        """
+        logger.debug(f"Updating progress to {value}%")
+        print(f"DEBUG: Updating progress to {value}%")  # Print to terminal
         self.progress.setValue(value)
 
     def update_file_list(self, old_filename, new_filename):
+        """
+        Updates the file list with renamed files.
+        """
+        logger.debug(f"Updating file list: '{old_filename}' -> '{new_filename}'")
+        print(f"DEBUG: Updating file list: '{old_filename}' -> '{new_filename}'")  # Print to terminal
         for index in range(self.file_list.count()):
             item = self.file_list.item(index)
             if item.text() == old_filename:
@@ -156,17 +200,28 @@ class RenameArrrGUI(QWidget):
                 break
 
     def show_error(self, message):
+        """
+        Displays an error message in a dialog.
+        """
         logger.error(f"Error occurred: {message}")
+        print(f"DEBUG: Error occurred: {message}")  # Print to terminal
         QMessageBox.critical(self, 'Error', message)
 
     def rename_finished(self):
+        """
+        Resets the UI once the renaming process is complete.
+        """
         logger.info("Renaming process finished.")
+        print("DEBUG: Renaming process finished.")  # Print to terminal
         self.rename_button.setEnabled(True)
         self.browse_button.setEnabled(True)
         QMessageBox.information(self, 'Renaming Completed', 'File renaming process has completed.')
         self.progress.setValue(0)
 
 def main():
+    """
+    Main entry point for the application.
+    """
     app = QApplication(sys.argv)
     gui = RenameArrrGUI()
     gui.show()

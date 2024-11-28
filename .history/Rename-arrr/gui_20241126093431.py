@@ -1,3 +1,5 @@
+# Rename-arrr/gui.py
+
 import sys
 import os
 from PyQt5.QtWidgets import (
@@ -8,7 +10,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from renamer import rename_files, extract_title_year
 from utils import setup_logger
 
-# Set up the logger for debugging
+# Set up the logger
 logger = setup_logger()
 
 class RenameThread(QThread):
@@ -24,23 +26,19 @@ class RenameThread(QThread):
 
     def run(self):
         total_files = len(self.files)
-        logger.info(f"Starting renaming process for {total_files} files.")
         for index, filename in enumerate(self.files, start=1):
             if not self._is_running:
-                logger.info("Renaming process stopped by user.")
                 break
             try:
                 title, year = extract_title_year(filename)
                 new_filename = rename_files(self.folder_path, filename, title, year)
                 self.file_renamed.emit(filename, new_filename)
-                logger.debug(f"Renamed '{filename}' to '{new_filename}'.")
             except Exception as e:
                 error_message = f"Failed to rename '{filename}': {e}"
                 logger.error(error_message)
                 self.error_occurred.emit(error_message)
             progress = int((index / total_files) * 100)
             self.progress_update.emit(progress)
-        logger.info("Renaming process completed.")
 
     def stop(self):
         self._is_running = False
@@ -62,7 +60,6 @@ class RenameArrrGUI(QWidget):
         layout.addWidget(self.label)
 
         self.path_input = QLineEdit(self)
-        self.path_input.setReadOnly(True)
         layout.addWidget(self.path_input)
 
         self.browse_button = QPushButton('Browse', self)
@@ -70,7 +67,7 @@ class RenameArrrGUI(QWidget):
         layout.addWidget(self.browse_button)
 
         # File list
-        self.file_list_label = QLabel('Files in Selected Folder:', self)
+        self.file_list_label = QLabel('Files to Rename:', self)
         layout.addWidget(self.file_list_label)
 
         self.file_list = QListWidget(self)
@@ -91,37 +88,45 @@ class RenameArrrGUI(QWidget):
     def browse_folder(self):
         folder = QFileDialog.getExistingDirectory(self, 'Select Folder')
         if folder:
-            logger.debug(f"Selected folder: {folder}")
+            print(f"DEBUG: Selected folder: {folder}")  # Debug output
             self.path_input.setText(folder)
             self.populate_file_list(folder)
-        else:
-            logger.debug("No folder selected.")
 
     def populate_file_list(self, folder_path):
+        """
+        Populates the file list widget with supported media files from the specified folder.
+        """
         self.file_list.clear()
+        supported_extensions = ['.mp4', '.mkv', '.avi', '.mov', '.wmv']
         logger.info(f"Populating file list for folder: {folder_path}")
+        print(f"DEBUG: Populating file list for folder: {folder_path}")  # Debug output
 
         if not os.path.exists(folder_path):
             logger.error(f"Folder does not exist: {folder_path}")
             QMessageBox.critical(self, 'Error', f"The folder does not exist: {folder_path}")
             return
 
-        allowed_extensions = {'.mp4', '.mkv', '.avi', '.mov'}
         try:
             files_found = False
             for filename in os.listdir(folder_path):
                 full_path = os.path.join(folder_path, filename)
-                if os.path.isfile(full_path) and os.path.splitext(filename)[1].lower() in allowed_extensions:
-                    self.file_list.addItem(QListWidgetItem(filename))
-                    logger.debug(f"Adding file: {filename}")
-                    files_found = True
+                logger.debug(f"Checking file: {full_path}")
+                print(f"DEBUG: Checking file: {full_path}")  # Debug output
+                if os.path.isfile(full_path):
+                    _, ext = os.path.splitext(filename)
+                    if ext.lower() in supported_extensions:
+                        logger.info(f"Adding file: {filename}")
+                        print(f"DEBUG: Adding file: {filename}")  # Debug output
+                        item = QListWidgetItem(filename)
+                        self.file_list.addItem(item)
+                        files_found = True
 
             if not files_found:
-                logger.info(f"No media files found in folder: {folder_path}")
-                QMessageBox.information(self, 'No Files Found', 'No media files found in the selected folder.')
+                logger.warning(f"No supported media files found in: {folder_path}")
+                QMessageBox.information(self, 'No Files Found', 'No supported media files found in the selected folder.')
         except Exception as e:
             logger.error(f"Error populating file list: {e}")
-            QMessageBox.critical(self, 'Error', f"An error occurred: {e}")
+            QMessageBox.critical(self, 'Error', f"An error occurred while reading the folder: {e}")
 
     def rename_files_action(self):
         folder_path = self.path_input.text()
@@ -131,10 +136,9 @@ class RenameArrrGUI(QWidget):
 
         files_to_rename = [self.file_list.item(i).text() for i in range(self.file_list.count())]
         if not files_to_rename:
-            QMessageBox.information(self, 'No Files', 'No files found to rename.')
+            QMessageBox.information(self, 'No Files', 'No media files found to rename.')
             return
 
-        logger.info(f"Starting renaming for {len(files_to_rename)} files in folder: {folder_path}")
         self.rename_button.setEnabled(False)
         self.browse_button.setEnabled(False)
 
@@ -156,11 +160,9 @@ class RenameArrrGUI(QWidget):
                 break
 
     def show_error(self, message):
-        logger.error(f"Error occurred: {message}")
         QMessageBox.critical(self, 'Error', message)
 
     def rename_finished(self):
-        logger.info("Renaming process finished.")
         self.rename_button.setEnabled(True)
         self.browse_button.setEnabled(True)
         QMessageBox.information(self, 'Renaming Completed', 'File renaming process has completed.')

@@ -16,6 +16,3 @@ ENV/
 .DS_Store
 Thumbs.db
 "@ | Set-Content -Path ".gitignore"
-.env
-.env
-.history/.env_20241125170349

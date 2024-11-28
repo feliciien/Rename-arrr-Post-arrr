@@ -4,24 +4,22 @@ import re
 def extract_title_year(filename):
     """
     Extracts the title and year from a filename.
-    Supports naming conventions like:
-      - Title (Year).ext
+    Supports common naming conventions like:
       - Title.Year.ext
+      - Title (Year).ext
       - Title - Year.ext
-      - Title_Year_Resolution.ext
     Returns:
       - Title (str): Extracted or cleaned title.
       - Year (str): Extracted year or 'Unknown' if not found.
     """
-    # Patterns for common file naming conventions
+    # Patterns to match various file naming conventions
     patterns = [
-        r'^(?P<title>.+?)\s*\((?P<year>\d{4})\)',  # Title (Year).ext
-        r'^(?P<title>.+?)\.(?P<year>\d{4})',       # Title.Year.ext
-        r'^(?P<title>.+?)\s*-\s*(?P<year>\d{4})',  # Title - Year.ext
-        r'^(?P<title>.+?)_(?P<year>\d{4})'         # Title_Year.ext
+        r'^(?P<title>.+?)\s*\((?P<year>\d{4})\)',  # e.g., "Title (2020)"
+        r'^(?P<title>.+?)\s*-\s*(?P<year>\d{4})',  # e.g., "Title - 2020"
+        r'^(?P<title>.+?)\.(?P<year>\d{4})'        # e.g., "Title.2020"
     ]
 
-    base_name = os.path.splitext(filename)[0]  # Remove file extension
+    base_name = os.path.splitext(filename)[0]  # Remove extension
     for pattern in patterns:
         match = re.match(pattern, base_name)
         if match:
@@ -29,12 +27,12 @@ def extract_title_year(filename):
             year = match.group('year').strip()
             return sanitize_title(title), year
 
-    # If no pattern matches, fallback to the original filename and 'Unknown'
+    # If no patterns match, return original filename as title and 'Unknown' for year
     return sanitize_title(base_name), 'Unknown'
 
 def sanitize_title(title):
     """
-    Removes invalid characters from the title for safe file naming.
+    Cleans up the title by removing invalid characters for file systems.
     """
     invalid_chars = r'[<>:"/\\|?*]'
     return re.sub(invalid_chars, '', title).strip()
@@ -64,22 +62,3 @@ def rename_files(folder_path, filename, title, year):
 
     os.rename(old_path, new_path)
     return new_filename
-
-def rename_all_files_in_folder(folder_path):
-    """
-    Iterates over all files in a folder and renames them.
-    """
-    if not os.path.exists(folder_path):
-        raise FileNotFoundError(f"Folder does not exist: {folder_path}")
-
-    renamed_files = []
-    for filename in os.listdir(folder_path):
-        full_path = os.path.join(folder_path, filename)
-        if os.path.isfile(full_path):
-            try:
-                title, year = extract_title_year(filename)
-                new_filename = rename_files(folder_path, filename, title, year)
-                renamed_files.append((filename, new_filename))
-            except Exception as e:
-                print(f"Failed to rename {filename}: {e}")
-    return renamed_files
