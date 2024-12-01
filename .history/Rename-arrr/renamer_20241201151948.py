@@ -28,21 +28,20 @@ def sanitize_title(title):
     invalid_chars = r'[<>:"/\\|?*]'
     return re.sub(invalid_chars, '', title).strip()
 
-def rename_files(folder_path, filename, extracted_title, extracted_year):
+def rename_files(folder_path, filename, title, year):
     """
     Rename a file based on metadata fetched from TMDb or extracted from filename.
     """
-    # Initialize with fallback values
-    final_title, final_year = extracted_title, extracted_year
+    final_title, final_year = title, year
 
     try:
         # Attempt to fetch metadata using the API
-        fetched_metadata = fetch_metadata(extracted_title, extracted_year)
-        if fetched_metadata:
-            final_title = fetched_metadata.get('title', extracted_title)
-            final_year = fetched_metadata.get('year', extracted_year)
-    except Exception as e:
-        print(f"WARNING: Fallback to filename metadata for '{filename}'. Reason: {e}")
+        fetched_metadata = fetch_metadata(title, year)
+        final_title = fetched_metadata.get('title', title)
+        final_year = fetched_metadata.get('year', year)
+    except (ValueError, ConnectionError):
+        # Log fallback usage
+        print(f"WARNING: Fallback to filename metadata for '{filename}'.")
 
     extension = os.path.splitext(filename)[1]
     new_filename = f"{final_title} ({final_year}){extension}"
@@ -50,7 +49,6 @@ def rename_files(folder_path, filename, extracted_title, extracted_year):
     old_path = os.path.join(folder_path, filename)
     new_path = os.path.join(folder_path, new_filename)
 
-    # Handle duplicate filenames
     counter = 1
     while os.path.exists(new_path):
         new_filename = f"{final_title} ({final_year}) [{counter}]{extension}"

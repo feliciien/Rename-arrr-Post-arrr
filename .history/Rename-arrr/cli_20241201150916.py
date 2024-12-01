@@ -25,11 +25,8 @@ def rename_files_cli(folder_path):
 
     for filename in files_to_rename:
         try:
-            # Extract title and year from filename
-            extracted_title, extracted_year = extract_title_year(filename)
-
-            # Rename file with extracted or fetched metadata
-            new_filename = rename_files(folder_path, filename, extracted_title, extracted_year)
+            title, year = extract_title_year(filename)
+            new_filename = rename_files(folder_path, filename, title, year)
             logger.info(f"Renamed '{filename}' to '{new_filename}'")
             print(f"Renamed '{filename}' to '{new_filename}'")
         except Exception as e:

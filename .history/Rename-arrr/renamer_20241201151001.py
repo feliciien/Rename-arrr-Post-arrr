@@ -1,6 +1,6 @@
 import os
 import re
-from metadata_fetcher import fetch_movie_metadata as fetch_metadata
+from metadata_fetcher import fetch_metadata
 
 def extract_title_year(filename):
     """
@@ -28,21 +28,16 @@ def sanitize_title(title):
     invalid_chars = r'[<>:"/\\|?*]'
     return re.sub(invalid_chars, '', title).strip()
 
-def rename_files(folder_path, filename, extracted_title, extracted_year):
+def rename_files(folder_path, filename, title, year):
     """
     Rename a file based on metadata fetched from TMDb or extracted from filename.
     """
-    # Initialize with fallback values
-    final_title, final_year = extracted_title, extracted_year
+    # Attempt to fetch metadata using the API
+    fetched_title, fetched_year = fetch_metadata(title, year)
 
-    try:
-        # Attempt to fetch metadata using the API
-        fetched_metadata = fetch_metadata(extracted_title, extracted_year)
-        if fetched_metadata:
-            final_title = fetched_metadata.get('title', extracted_title)
-            final_year = fetched_metadata.get('year', extracted_year)
-    except Exception as e:
-        print(f"WARNING: Fallback to filename metadata for '{filename}'. Reason: {e}")
+    # Fallback to extracted metadata if API fails
+    final_title = fetched_title if fetched_title else title
+    final_year = fetched_year if fetched_year else year
 
     extension = os.path.splitext(filename)[1]
     new_filename = f"{final_title} ({final_year}){extension}"
@@ -50,7 +45,6 @@ def rename_files(folder_path, filename, extracted_title, extracted_year):
     old_path = os.path.join(folder_path, filename)
     new_path = os.path.join(folder_path, new_filename)
 
-    # Handle duplicate filenames
     counter = 1
     while os.path.exists(new_path):
         new_filename = f"{final_title} ({final_year}) [{counter}]{extension}"

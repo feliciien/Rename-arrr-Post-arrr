@@ -1,6 +1,7 @@
 import argparse
 import os
 from renamer import rename_files, extract_title_year
+from metadata_fetcher import fetch_movie_metadata as fetch_metadata
 from utils import setup_logger
 
 logger = setup_logger()
@@ -25,11 +26,15 @@ def rename_files_cli(folder_path):
 
     for filename in files_to_rename:
         try:
-            # Extract title and year from filename
-            extracted_title, extracted_year = extract_title_year(filename)
+            # Extract initial metadata from filename
+            title, year = extract_title_year(filename)
 
-            # Rename file with extracted or fetched metadata
-            new_filename = rename_files(folder_path, filename, extracted_title, extracted_year)
+            # Fetch metadata from API
+            metadata = fetch_metadata(title, year)
+            new_title, new_year = metadata['title'], metadata['year']
+
+            # Rename file
+            new_filename = rename_files(folder_path, filename, new_title, new_year)
             logger.info(f"Renamed '{filename}' to '{new_filename}'")
             print(f"Renamed '{filename}' to '{new_filename}'")
         except Exception as e:

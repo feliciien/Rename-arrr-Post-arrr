@@ -12,6 +12,12 @@ TMDB_MOVIE_DETAILS_URL = "https://api.themoviedb.org/3/movie/{}"
 def fetch_movie_metadata(title, year=None):
     """
     Fetches movie metadata from TheMovieDB API based on the title and optional year.
+    
+    :param title: Title of the movie.
+    :param year: Release year of the movie (optional).
+    :return: Dictionary containing movie title and release year.
+    :raises ValueError: If no metadata is found.
+    :raises ConnectionError: If API request fails.
     """
     if not TMDB_API_KEY:
         raise EnvironmentError("TMDB_API_KEY is not set. Please set it in your .env file.")
@@ -61,20 +67,3 @@ def fetch_movie_metadata(title, year=None):
         raise ValueError(str(ve))
     except Exception as e:
         raise RuntimeError(f"An unexpected error occurred: {e}")
-
-# TEST BLOCK
-if __name__ == "__main__":
-    try:
-        # Example 1: Valid title and year
-        metadata = fetch_movie_metadata("Inception", 2010)
-        print(f"Metadata for 'Inception (2010)': {metadata}")
-
-        # Example 2: Valid title without year
-        metadata = fetch_movie_metadata("Avatar")
-        print(f"Metadata for 'Avatar': {metadata}")
-
-        # Example 3: Non-existent movie
-        metadata = fetch_movie_metadata("SomeNonExistentMovieTitle")
-        print(f"Metadata for 'SomeNonExistentMovieTitle': {metadata}")
-    except Exception as e:
-        print(f"Error: {e}")
