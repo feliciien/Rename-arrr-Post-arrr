@@ -12,6 +12,11 @@ aiofiles>=23.2.1
 pyyaml>=6.0.1
 tqdm>=4.66.1
 tvdb-v4-official>=1.1.0
+aiohttp>=3.8.0
+beautifulsoup4>=4.9.3
+lxml>=4.9.0
+PyQt5>=5.15.0
+musicbrainzngs>=0.7.1
 
 # Development dependencies (also available via pip install -e .[dev])
 pytest>=7.4.3

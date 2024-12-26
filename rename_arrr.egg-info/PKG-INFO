@@ -35,6 +35,11 @@ Requires-Dist: aiofiles>=23.2.1
 Requires-Dist: pyyaml>=6.0.1
 Requires-Dist: tqdm>=4.66.1
 Requires-Dist: tvdb-v4-official>=1.1.0
+Requires-Dist: aiohttp>=3.8.0
+Requires-Dist: beautifulsoup4>=4.9.3
+Requires-Dist: lxml>=4.9.0
+Requires-Dist: PyQt5>=5.15.0
+Requires-Dist: musicbrainzngs>=0.7.1
 Requires-Dist: pytest>=7.4.3
 Requires-Dist: pytest-asyncio>=0.23.2
 Requires-Dist: pytest-qt>=4.2.0
@@ -54,30 +59,36 @@ A powerful media file renaming tool with metadata fetching and organization feat
 ## Features
 
 ### Core Features
-- Rename movies, TV shows, and anime files using metadata from multiple sources
+- Rename movies, TV shows, anime files, and music files using metadata from multiple sources
 - Create NFO files compatible with Emby, Plex, and Kodi
 - Download posters and artwork
 - Support for both GUI and CLI interfaces
-- Batch processing of files
+- Individual file and batch processing
 - Undo/history functionality
 
 ### Metadata Sources
 - **Anime**: AniDB (direct scraping)
 - **TV Shows**: TheTVDB (API and direct scraping)
 - **Artwork**: ThePosterDB (direct scraping)
+- **Music**: File metadata and online databases
 
 ### File Organization
-- Intelligent title and year extraction
+- Intelligent title, artist, and year extraction
 - Configurable naming patterns
 - Handles duplicates automatically
 - Creates proper folder structures
 - Supports various media formats
+
+### Supported Formats
+- **Video**: MP4, MKV, AVI, MOV, WMV, FLV
+- **Audio**: MP3, WAV, FLAC, M4A, AAC, OGG
 
 ## Installation
 
 ### Prerequisites
 - Python 3.8 or higher
 - pip (Python package installer)
+- PyQt5 (for GUI)
 
 ### Installation Steps
 
@@ -103,30 +114,33 @@ pip install -e .
 
 Run the GUI version:
 ```bash
-rename-arrr-gui
+python -m rename_arrr.gui.main_window
 ```
 
 The GUI provides:
-- Folder selection dialog
-- Progress tracking
+- Individual file selection
+- Multi-file selection support
+- File list view with clear option
+- Progress tracking per file
 - Real-time feedback
+- Media type selection (Auto/Movies/TV Shows/Music)
 - Options for NFO generation and poster downloads
 
 ### Command Line Interface (CLI)
 
 Basic usage:
 ```bash
-rename-arrr --folder /path/to/media
+rename-arrr --files file1.mp4 file2.mp3
 ```
 
 Advanced options:
 ```bash
-rename-arrr --folder /path/to/media --type anime --no-nfo --no-posters
+rename-arrr --files video.mkv --type anime --no-nfo --no-posters
 ```
 
 Available options:
-- `--folder`, `-f`: Path to media folder (required)
-- `--type`, `-t`: Media type (auto/anime/series/movie)
+- `--files`: Space-separated list of files to process
+- `--type`, `-t`: Media type (auto/anime/series/movie/music)
 - `--no-nfo`: Skip NFO file generation
 - `--no-posters`: Skip poster downloads
 
@@ -139,6 +153,7 @@ The application supports various configuration options:
 - Anime
 - TV Series
 - Movies
+- Music
 
 ### NFO Files
 - Creates compatible NFO files for:
@@ -147,9 +162,9 @@ The application supports various configuration options:
   - Kodi (XBMC)
 
 ### Naming Patterns
-- Title (Year)
-- Show Name - S01E02 - Episode Title
-- Anime [01] - Episode Title
+- Movies: Title (Year)
+- TV Shows: Title - SXXEXX
+- Music: [Track#] Artist - Title
 
 ## Development
 
