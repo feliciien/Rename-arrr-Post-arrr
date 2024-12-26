@@ -1,0 +1,36 @@
+README.md
+setup.py
+Post-arrr/__init__.py
+Post-arrr/downloader.py
+Post-arrr/logger.py
+Post-arrr/nzblnk_handler.py
+Post-arrr/uploader.py
+rename_arrr/__init__.py
+rename_arrr/__main__.py
+rename_arrr/cli.py
+rename_arrr/create_test_files.py
+rename_arrr/gui.py
+rename_arrr/list_files.py
+rename_arrr/metadata_fetcher.py
+rename_arrr/renamer.py
+rename_arrr/test_file_access.py
+rename_arrr/test_qfiledialog.py
+rename_arrr/test_renamer.py
+rename_arrr/utils.py
+rename_arrr.egg-info/PKG-INFO
+rename_arrr.egg-info/SOURCES.txt
+rename_arrr.egg-info/dependency_links.txt
+rename_arrr.egg-info/entry_points.txt
+rename_arrr.egg-info/requires.txt
+rename_arrr.egg-info/top_level.txt
+rename_arrr/scrapers/__init__.py
+rename_arrr/scrapers/anidb.py
+rename_arrr/scrapers/anidb_scraper.py
+rename_arrr/scrapers/base.py
+rename_arrr/scrapers/posterdb.py
+rename_arrr/scrapers/posterdb_scraper.py
+rename_arrr/scrapers/tvdb.py
+rename_arrr/scrapers/tvdb_scraper.py
+tests/test_metadata_fetcher (Unknown).py
+tests/test_renamer (Unknown).py
+tests/test_renamer.py

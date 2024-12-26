@@ -1,6 +1,19 @@
-PyQt5
-requests
-beautifulsoup4
-argparse
-pandas
-openpyxl
+# Runtime dependencies
+PyQt5>=5.15.9
+requests>=2.31.0
+beautifulsoup4>=4.12.2
+aiohttp>=3.9.1
+lxml>=4.9.3
+cloudscraper>=1.2.71
+selenium>=4.15.2
+playwright>=1.40.0
+python-dotenv>=1.0.0
+aiofiles>=23.2.1
+pyyaml>=6.0.1
+tqdm>=4.66.1
+tvdb-v4-official>=1.1.0
+
+# Development dependencies (also available via pip install -e .[dev])
+pytest>=7.4.3
+pytest-asyncio>=0.23.2
+pytest-qt>=4.2.0

@@ -1,125 +1,154 @@
-README.md
+# Rename-arrr 🏴‍☠️
 
-# Rename-arrr
+A powerful media file renaming tool with metadata fetching and organization features. Rename-arrr helps you organize your media library by automatically fetching metadata from various sources and renaming files according to your preferences.
 
-Rename-arrr is a versatile file renaming tool designed for media enthusiasts and content organizers. It allows seamless renaming of media files such as movies and TV shows by fetching metadata from APIs like [The Movie Database (TMDb)](https://www.themoviedb.org/). The tool supports both a Graphical User Interface (GUI) and Command-Line Interface (CLI), ensuring accessibility and automation for all users.
+## Features
 
----
+### Core Features
+- Rename movies, TV shows, anime files, and music files using metadata from multiple sources
+- Create NFO files compatible with Emby, Plex, and Kodi
+- Download posters and artwork
+- Support for both GUI and CLI interfaces
+- Individual file and batch processing
+- Undo/history functionality
 
-## **Features**
+### Metadata Sources
+- **Anime**: AniDB (direct scraping)
+- **TV Shows**: TheTVDB (API and direct scraping)
+- **Artwork**: ThePosterDB (direct scraping)
+- **Music**: File metadata and online databases
 
-### **Core Functionalities**
-- Rename media files based on metadata (title, release year) fetched from TMDb.
-- Fallback mechanism to extract title and year directly from filenames if metadata is unavailable.
-- Prevents duplicate filenames by appending numeric suffixes (`[1]`, `[2]`, etc.).
-- Supports a wide range of file extensions: `.mp4`, `.mkv`, `.avi`, `.mov`, etc.
+### File Organization
+- Intelligent title, artist, and year extraction
+- Configurable naming patterns
+- Handles duplicates automatically
+- Creates proper folder structures
+- Supports various media formats
 
-### **User Interfaces**
-- **GUI:**
-  - User-friendly interface built with PyQt5.
-  - Progress bar to display renaming progress in real-time.
-  - Browse and select folders for batch renaming.
-- **CLI:**
-  - Simple and powerful command-line interface for automation.
-  - Supports folder input and real-time logging.
+### Supported Formats
+- **Video**: MP4, MKV, AVI, MOV, WMV, FLV
+- **Audio**: MP3, WAV, FLAC, M4A, AAC, OGG
 
-### **Logging and Error Handling**
-- Comprehensive logging to track activities and errors.
-- Graceful fallback to filename-based renaming for files without metadata.
+## Installation
 
----
+### Prerequisites
+- Python 3.8 or higher
+- pip (Python package installer)
+- PyQt5 (for GUI)
 
-## **Installation**
+### Installation Steps
 
-### **Prerequisites**
-1. Python 3.8 or higher installed on your system.
-2. [The Movie Database (TMDb) API Key](https://developers.themoviedb.org/3/getting-started/introduction).
-
-### **Setup**
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/feliciien/Rename-arrr-Post-arrr.git
-   cd Rename-arrr-Post-arrr/Rename-arrr
+```bash
+git clone https://github.com/feliciien/Rename-arrr-Post-arrr.git
+cd Rename-arrr-Post-arrr
+```
 
-	2.	Install the required dependencies:
-
+2. Install dependencies:
+```bash
 pip install -r requirements.txt
+```
 
+3. Install the package:
+```bash
+pip install -e .
+```
 
-	3.	Set up your .env file with your TMDb API key:
+## Usage
 
-TMDB_API_KEY=your_tmdb_api_key
+### Graphical Interface (GUI)
 
-Usage
+Run the GUI version:
+```bash
+python -m rename_arrr.gui.main_window
+```
 
-GUI Mode
+The GUI provides:
+- Individual file selection
+- Multi-file selection support
+- File list view with clear option
+- Progress tracking per file
+- Real-time feedback
+- Media type selection (Auto/Movies/TV Shows/Music)
+- Options for NFO generation and poster downloads
 
-	1.	Run the GUI application:
+### Command Line Interface (CLI)
 
-python gui.py
+Basic usage:
+```bash
+rename-arrr --files file1.mp4 file2.mp3
+```
 
+Advanced options:
+```bash
+rename-arrr --files video.mkv --type anime --no-nfo --no-posters
+```
 
-	2.	Select a folder containing media files.
-	3.	Click “Rename Files” to start renaming.
+Available options:
+- `--files`: Space-separated list of files to process
+- `--type`, `-t`: Media type (auto/anime/series/movie/music)
+- `--no-nfo`: Skip NFO file generation
+- `--no-posters`: Skip poster downloads
 
-CLI Mode
+## Configuration
 
-	1.	Run the CLI with the folder path:
+The application supports various configuration options:
 
-python cli.py --folder <path_to_folder>
+### Media Types
+- Auto-detect (default)
+- Anime
+- TV Series
+- Movies
+- Music
 
-Folder Structure
+### NFO Files
+- Creates compatible NFO files for:
+  - Emby
+  - Plex
+  - Kodi (XBMC)
 
-Rename-arrr-Post-arrr/
-│
-├── Rename-arrr/
-│   ├── gui.py                  # Graphical User Interface
-│   ├── cli.py                  # Command-Line Interface
-│   ├── renamer.py              # Core renaming logic
-│   ├── metadata_fetcher.py     # Fetches metadata from TMDb
-│   ├── utils.py                # Utility functions
-│   ├── test_renamer.py         # Unit tests for renaming logic
-│   ├── create_test_files.py    # Script to generate test files
-│   ├── requirements.txt        # Python dependencies
-│   ├── logs/                   # Logging directory
-│   └── __init__.py             # Module initialization
-│
-└── tests/
-    └── test_files/             # Test files for renaming
+### Naming Patterns
+- Movies: Title (Year)
+- TV Shows: Title - SXXEXX
+- Music: [Track#] Artist - Title
 
-Supported File Extensions
+## Development
 
-	•	.mp4
-	•	.mkv
-	•	.avi
-	•	.mov
+### Project Structure
+```
+Rename-arrr/
+├── core/
+│   ├── renamer.py
+│   └── nfo_generator.py
+├── scrapers/
+│   ├── anidb_scraper.py
+│   ├── tvdb_scraper.py
+│   └── posterdb_scraper.py
+├── gui/
+│   └── main_window.py
+├── cli.py
+└── __main__.py
+```
 
-Testing
+### Running Tests
+```bash
+python -m pytest tests/
+```
 
-Run unit tests to validate functionality:
+## Contributing
 
-python test_renamer.py
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-Future Enhancements
+## License
 
-	•	Add support for additional metadata providers.
-	•	Extend functionality to rename music and eBooks.
-	•	Implement preset configurations for Emby, Plex, and Kodi.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-Contributing
+## Acknowledgments
 
-Contributions are welcome! Feel free to fork the repository and submit a pull request with your improvements.
-
-License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
-
-Acknowledgments
-
-	•	TMDb API for metadata integration.
-	•	The Python community for the amazing PyQt5 and other libraries used in this project.
-
-Contact:
-https://github.com/feliciien/Rename-arrr-Post-arrr
-
-
+- Inspired by FileBot and MetaX
+- Uses various open-source libraries and APIs
+- Thanks to all contributors
