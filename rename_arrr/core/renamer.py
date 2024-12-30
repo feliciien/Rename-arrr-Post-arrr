@@ -103,6 +103,14 @@ class MediaRenamer:
     def _generate_filename(self, path: Path, metadata: Dict) -> Optional[str]:
         """Generate new filename based on metadata"""
         try:
+            # Handle known show name capitalizations
+            known_capitalizations = {
+                'swat': 'S.W.A.T.',
+                'shield': 'S.H.I.E.L.D.',
+                'ncis': 'NCIS',
+                'csi': 'CSI'
+            }
+
             if metadata.get('type') == 'movie':
                 # Movie format: Title (Year).ext
                 title = metadata.get('title', path.stem)
@@ -112,6 +120,10 @@ class MediaRenamer:
             elif metadata.get('type') in ('series', 'anime'):
                 # TV format: Title - SXXEYY.ext
                 title = metadata.get('title', path.stem)
+                # Check for known capitalizations
+                title_lower = title.lower()
+                if title_lower in known_capitalizations:
+                    title = known_capitalizations[title_lower]
                 season = metadata.get('season', '1')
                 episode = metadata.get('episode', '1')
                 return f"{title} - S{int(season):02d}E{int(episode):02d}{path.suffix}"
@@ -216,7 +228,7 @@ class MediaRenamer:
         # Remove extension and replace dots/underscores with spaces
         name = os.path.splitext(filename)[0]
         original_name = name  # Keep original for year extraction
-        name = name.replace('.', ' ').replace('_', ' ')
+        name = name.replace('.', ' ').replace('_', ' ').replace('-', ' ')
         
         # Check for common music file patterns
         music_patterns = [
@@ -276,8 +288,14 @@ class MediaRenamer:
             r'\bBT2020\b',
             r'\bDTS\b',
             r'\bDD5\.1\b',
-            r'\[.*?\]',  # Anything in square brackets
-            r'\(.*?\)',  # Anything in parentheses except years
+            r'\bdd51\b',  # Added
+            r'\bded\b',   # Added
+            r'\bdl\b',    # Added
+            r'\b7p\b',    # Added
+            r'\bazhd\b',  # Added
+            r'\btvs\b',   # Added
+            r'\[.*?\]',   # Anything in square brackets
+            r'\(.*?\)',   # Anything in parentheses except years
         ]
         
         clean_name = name
@@ -291,37 +309,47 @@ class MediaRenamer:
         year_match = re.search(r'\b(19|20)\d{2}\b', original_name)
         year = year_match.group(0) if year_match else None
         
-        # Try to match TV show pattern (Show Name - S01E02)
-        tv_match = re.search(r'(.+?)[-\s]+[Ss](\d{1,2})[Ee](\d{1,2})', clean_name)
-        if tv_match:
-            title = tv_match.group(1).strip()
+        # Try to match TV show patterns
+        tv_patterns = [
+            r'(.+?)[-\s]+[Ss](\d{1,2})[Ee](\d{1,2})',  # S01E01 format
+            r'(.+?)[-\s]+(\d)(\d{2})',                  # 101 format (1 digit season)
+            r'(.+?)[-\s]+(\d{2})(\d{2})',               # 1001 format (2 digit season)
+        ]
+        
+        for pattern in tv_patterns:
+            tv_match = re.search(pattern, clean_name)
+            if tv_match:
+                title = tv_match.group(1).strip()
+                return {
+                    'title': title,
+                    'year': year,
+                    'type': 'anime' if is_anime else 'series',
+                    'season': tv_match.group(2),
+                    'episode': tv_match.group(3)
+                }
+        
+        # Try to match standalone episode number (like "101")
+        episode_match = re.search(r'(\d{2,3})(?:\s|$)', clean_name)
+        if episode_match:
+            episode_num = episode_match.group(1)
+            if len(episode_num) == 3:
+                season = episode_num[0]
+                episode = episode_num[1:]
+            else:
+                season = '1'
+                episode = episode_num
+                
+            # Get title by removing the episode number
+            title = clean_name[:episode_match.start()].strip()
             return {
                 'title': title,
                 'year': year,
                 'type': 'anime' if is_anime else 'series',
-                'season': tv_match.group(2),
-                'episode': tv_match.group(3)
-            }
-        
-        # Try to match anime episode pattern (Show Name - 01)
-        anime_match = re.search(r'(.+?)[-\s]+(\d{1,3})(?:\s|$)', clean_name)
-        if anime_match and is_anime:
-            title = anime_match.group(1).strip()
-            episode = anime_match.group(2)
-            return {
-                'title': title,
-                'year': year,
-                'type': 'anime',
-                'season': '1',  # Default to season 1 for anime
+                'season': season,
                 'episode': episode
             }
         
         # If no TV/anime pattern, treat as movie
-        # Try to find the year in the clean name if not found in original
-        if not year:
-            year_match = re.search(r'\b(19|20)\d{2}\b', clean_name)
-            year = year_match.group(0) if year_match else None
-        
         if year:
             # Find the year in the clean name to get the title
             year_match = re.search(re.escape(year), clean_name)
