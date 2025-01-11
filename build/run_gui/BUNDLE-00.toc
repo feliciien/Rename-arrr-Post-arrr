@@ -1,0 +1,3 @@
+([('run_gui',
+   '/Users/MacBookPro/Desktop/Rename-arrr-Post-arrr/dist/run_gui',
+   'EXECUTABLE')],)

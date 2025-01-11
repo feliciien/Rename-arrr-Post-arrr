@@ -13,18 +13,26 @@ import logging
 from typing import Dict, List
 
 from rename_arrr.core.renamer import MediaRenamer
+from rename_arrr.core.scrapers.movie_scraper import MovieTVScraper
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Set logging level to INFO for production
+if os.getenv('ENV') == 'production':
+    logger.setLevel(logging.INFO)
 
 class RenameWorker(QThread):
     progress = pyqtSignal(int)
     finished = pyqtSignal(list)
     log = pyqtSignal(str)
     
-    def __init__(self, files: List[str]):
+    def __init__(self, files: List[str], scraper: MovieTVScraper):
         super().__init__()
         self.files = files
         self.renamer = MediaRenamer()
+        self.scraper = scraper
         
     def run(self):
         """Run the renaming process"""
@@ -49,13 +57,26 @@ class RenameWorker(QThread):
                         'artist': info.get('artist'),
                         'track': info.get('track')
                     }
-                    new_path = loop.run_until_complete(self.renamer.rename_file(file_path, metadata))
-                    if new_path:
-                        results.append({
-                            'original': file_path,
-                            'new': new_path,
-                            'metadata': metadata
-                        })
+                    try:
+                        # Fetch additional metadata
+                        if metadata['type'] == 'movie':
+                            movie_metadata = self.scraper.search_movie(metadata['title'])
+                            if movie_metadata:
+                                metadata.update(movie_metadata)
+                        elif metadata['type'] == 'tv':
+                            tv_metadata = self.scraper.search_tv_show(metadata['title'])
+                            if tv_metadata:
+                                metadata.update(tv_metadata)
+                        
+                        new_path = loop.run_until_complete(self.renamer.rename_file(file_path, metadata))
+                        if new_path:
+                            results.append({
+                                'original': file_path,
+                                'new': new_path,
+                                'metadata': metadata
+                            })
+                    except Exception as rename_error:
+                        logger.error(f"Failed to rename file {file_path}: {rename_error}")
                 
                 self.progress.emit(int(i / total * 100))
             
@@ -65,6 +86,7 @@ class RenameWorker(QThread):
             self.finished.emit(results)
             
         except Exception as e:
+            logger.error(f"Error during renaming: {str(e)}")
             self.log.emit(f"Error: {str(e)}")
             self.finished.emit([])
 
@@ -92,8 +114,12 @@ class MainWindow(QMainWindow):
         btn_layout.addWidget(self.clear_btn)
         file_layout.addLayout(btn_layout)
         
-        # Add file list
+        # Add file list with drag-and-drop functionality
         self.file_list = QListWidget()
+        self.file_list.setAcceptDrops(True)
+        self.file_list.setDragDropMode(QListWidget.InternalMove)
+        self.file_list.dragEnterEvent = self.dragEnterEvent
+        self.file_list.dropEvent = self.dropEvent
         file_layout.addWidget(self.file_list)
         
         layout.addLayout(file_layout)
@@ -125,15 +151,75 @@ class MainWindow(QMainWindow):
         self.log_output.setReadOnly(True)
         layout.addWidget(self.log_output)
         
-        # Create start button
+        # Create theme toggle button
+        self.theme_toggle_btn = QPushButton("Toggle Theme")
+        self.theme_toggle_btn.clicked.connect(self.toggle_theme)
+        layout.addWidget(self.theme_toggle_btn)
+
+        # Create NFO generation button
+        self.nfo_btn = QPushButton("Generate NFO")
+        self.nfo_btn.clicked.connect(self.generate_nfo)
+        layout.addWidget(self.nfo_btn)
+
         self.start_btn = QPushButton("Start Renaming")
         self.start_btn.clicked.connect(self.start_renaming)
         layout.addWidget(self.start_btn)
         
         # Initialize worker
         self.worker = None
+        self.scraper = MovieTVScraper(tmdb_api_key='YOUR_TMDB_API_KEY')
         
+    def toggle_theme(self):
+        """Toggle between light and dark themes"""
+        if self.styleSheet() == "":
+            # Apply dark theme
+            self.setStyleSheet("""
+                QWidget {
+                    background-color: #2e2e2e;
+                    color: #ffffff;
+                }
+                QPushButton {
+                    background-color: #444444;
+                    color: #ffffff;
+                }
+                QProgressBar {
+                    background-color: #444444;
+                    color: #ffffff;
+                }
+                QTextEdit {
+                    background-color: #444444;
+                    color: #ffffff;
+                }
+                QListWidget {
+                    background-color: #444444;
+                    color: #ffffff;
+                }
+            """)
+        else:
+            # Revert to light theme
+            self.setStyleSheet("")
+
     def add_files(self):
+        """Open file selection dialog"""
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Select Media Files",
+            "",
+            "Media Files (*.mp3 *.mp4 *.mkv *.avi *.mov *.flac);;All Files (*.*)"
+        )
+        if files:
+            self.file_list.addItems(files)
+            self.log_output.append(f"Added {len(files)} files to the list")
+
+
+    def dropEvent(self, event):
+        """Handle drop event"""
+        for url in event.mimeData().urls():
+            file_path = url.toLocalFile()
+            if file_path:
+                self.file_list.addItem(file_path)
+                self.log_output.append(f"Added {file_path} via drag-and-drop")
+
         """Open file selection dialog"""
         files, _ = QFileDialog.getOpenFileNames(
             self,
@@ -164,7 +250,7 @@ class MainWindow(QMainWindow):
         self.progress.setValue(0)
         
         # Create and start worker
-        self.worker = RenameWorker(files)
+        self.worker = RenameWorker(files, self.scraper)
         self.worker.progress.connect(self.update_progress)
         self.worker.finished.connect(self.process_finished)
         self.worker.log.connect(self.log_message)
@@ -192,6 +278,25 @@ class MainWindow(QMainWindow):
     def log_message(self, message):
         """Add message to log output"""
         self.log_output.append(message)
+
+    def generate_nfo(self):
+        """Generate NFO files for selected media"""
+        files = [self.file_list.item(i).text() for i in range(self.file_list.count())]
+        if not files:
+            self.log_output.append("Please add some files first")
+            return
+
+        for file_path in files:
+            # Generate NFO content
+            nfo_content = "<nfo>\n"
+            nfo_content += f"  <title>{os.path.basename(file_path)}</title>\n"
+            nfo_content += "</nfo>\n"
+
+            # Save NFO file
+            nfo_path = os.path.splitext(file_path)[0] + ".nfo"
+            with open(nfo_path, 'w') as nfo_file:
+                nfo_file.write(nfo_content)
+            self.log_output.append(f"Generated NFO for {file_path}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
