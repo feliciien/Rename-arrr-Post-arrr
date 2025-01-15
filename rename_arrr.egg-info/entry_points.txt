@@ -1,3 +1,0 @@
-[console_scripts]
-rename-arrr = rename_arrr.cli:main
-rename-arrr-gui = rename_arrr.__main__:main
