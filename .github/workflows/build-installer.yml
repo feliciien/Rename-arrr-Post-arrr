@@ -44,24 +44,9 @@ jobs:
           & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' installer.iss
         shell: powershell
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist\RenameArrrInstaller.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: Automated release of RenameArrrInstaller.exe
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/RenameArrrInstaller.exe
-          asset_name: RenameArrrInstaller.exe
-          asset_content_type: application/octet-stream
