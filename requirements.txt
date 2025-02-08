@@ -17,6 +17,8 @@ beautifulsoup4>=4.9.3
 lxml>=4.9.0
 PyQt5>=5.15.0
 musicbrainzngs>=0.7.1
+tmdbv3api>=1.7.7
+imdbpy>=2021.4.18
 
 # Development dependencies (also available via pip install -e .[dev])
 pytest>=7.4.3

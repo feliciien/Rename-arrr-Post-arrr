@@ -12,7 +12,7 @@ PyInstaller.__main__.run([
     '--name=RenameArrr',
     '--onefile',
     '--windowed',
-    f'--add-data={os.path.join(base_dir, "rename_arrr")}:rename_arrr',
+    '--add-data={}{}*{}'.format(os.path.join(base_dir, 'rename_arrr'), os.pathsep, os.pathsep),
     '--hidden-import=PyQt5',
     '--hidden-import=requests',
     '--hidden-import=beautifulsoup4',
